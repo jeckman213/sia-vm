@@ -1,11 +1,29 @@
 #include <stdio.h>
 
+// Costant Declarations
+unsigned char memory[1024];
+
 // Takes in a file name 
 // Read the file into vm's memory
 // .bin file from assembler
 void load(char* filename)
 {
+    FILE *file = fopen(filename, "rb");
 
+    int character = getc(file);
+    int count = 1;
+
+    while(character != EOF)
+    {
+        if ((count % 8) == 0) 
+        {
+            memory[0] = character;
+            return;
+        }
+
+        character += getc(file);
+        count++;
+    }
 }
 
 // Read instruction bytes from memory
@@ -37,7 +55,9 @@ void store()
 
 int main(int argc, char *argv[])
 {
-    printf("%s", argv[1]);
+    load("test.bin");
+
+    printf("%x", memory[0]);
     
     return 1;
 }
