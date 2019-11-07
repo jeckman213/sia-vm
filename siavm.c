@@ -2,6 +2,7 @@
 
 // Costant Declarations
 unsigned char memory[1024];
+int byteCount = 0;
 
 // Takes in a file name 
 // Read the file into vm's memory
@@ -11,19 +12,17 @@ void load(char* filename)
     FILE *file = fopen(filename, "rb");
 
     int character = getc(file);
-    int count = 1;
 
     while(character != EOF)
     {
-        if ((count % 8) == 0) 
-        {
-            memory[0] = character;
-            return;
-        }
+        memory[byteCount] = character;
 
-        character += getc(file);
-        count++;
+        character = getc(file);
+
+        byteCount++;
     }
+
+    fclose(file);
 }
 
 // Read instruction bytes from memory
@@ -55,9 +54,18 @@ void store()
 
 int main(int argc, char *argv[])
 {
-    load("test.bin");
+    if (argv[1] == NULL) 
+        perror("No input binary file specified. Please specify a file after siavm command");
+    else 
+        load(argv[1]);
 
-    printf("%x", memory[0]);
+    int count;
+    for (count = 0; count < byteCount; count++)
+    {
+        printf("%x", memory[count]);
+
+        if (((count + 1) % 2) == 0) printf("\n");
+    }
     
     return 1;
 }
