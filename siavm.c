@@ -21,7 +21,7 @@ void testStore();
 // For memory
 unsigned char memory[1024];
 int byteCount = 0;
-int lastIntructionSize = 0;
+int lastIntructionSize = 2;
 int currentInstructionSize = 0;
 
 // Registers - All init to Zero
@@ -74,11 +74,15 @@ void load(char* filename)
 // Read instruction bytes from memory
 void fetch()
 {
-    int currentByte = Registers[PC] * lastIntructionSize;
+    // Gets the current byte of memory that should be fetched
+    // Then updates the program counter by one
+    int currentByte = Registers[PC]++ * lastIntructionSize;
     
+    // Determines the opcode for the current instruction to grab the right amount of bytes from memory
     int instruction = memory[currentByte] >> 4;
 
-    switch (instruction >> 4)
+    // If t
+    switch (instruction)
     {
         case 10:
         case 11:
@@ -94,6 +98,9 @@ void fetch()
     {
         currentInstruction[count] = memory[currentByte + count];
     }
+
+    // Updates lastIntructionSize global with the current instruction size
+    lastIntructionSize = currentInstructionSize;
 }
 
 // Read only from the array of bytes from fetch
