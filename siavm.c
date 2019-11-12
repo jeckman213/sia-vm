@@ -27,12 +27,14 @@ int currentInstructionSize = 0;
 // Registers - All init to Zero
 // Registers 0-14 general purpose
 // Register 15 stack register
-// Register 16 result register
-// Register 17 program counter
 const int STACK = 15;
-const int RESULT = 16;
-const int PC = 17;
-int Registers[18] = { 0 };
+int Registers[16] = { 0 };
+
+// Program counter
+int PC = 0;
+
+// Result
+int Result = 0;
 
 // OP1 & OP2
 int OP1, OP2;
@@ -76,12 +78,13 @@ void fetch()
 {
     // Gets the current byte of memory that should be fetched
     // Then updates the program counter by one
-    int currentByte = Registers[PC]++ * lastIntructionSize;
+    int currentByte = PC++ * lastIntructionSize;
     
     // Determines the opcode for the current instruction to grab the right amount of bytes from memory
     int instruction = memory[currentByte] >> 4;
 
-    // If t
+    // If the opcode is 10 || 11 || 12 || 13 set the current instruction size to 4 bytes
+    // Else set it to 2 bytes
     switch (instruction)
     {
         case 10:
@@ -93,6 +96,7 @@ void fetch()
             break;
     }
 
+    // Goes through and set the currentInstruction array to the bytes need to carry out instruction
     int count;
     for (count = 0; count < currentInstructionSize; count++)
     {
@@ -104,11 +108,12 @@ void fetch()
 }
 
 // Read only from the array of bytes from fetch
-// Populate the OP1 and Op2 registers if appropriate
+// Populate the OP1 and OP2 registers if appropriate
 // Or fetch additional memory needed to complete
 void decode()
 {
-
+    OP1 = currentInstruction[0] << 4 >> 4;
+    OP2 = currentInstruction[1];
 }
 
 // Switch statment that 'does the work'
