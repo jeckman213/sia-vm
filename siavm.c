@@ -21,8 +21,8 @@ void testStore();
 // For memory
 unsigned char memory[1024];
 int byteCount = 0;
-int lastIntructionSize = 2;
 int currentInstructionSize = 0;
+int currentByte = 0;
 
 // Registers - All init to Zero
 // Registers 0-14 general purpose
@@ -78,7 +78,7 @@ void fetch()
 {
     // Gets the current byte of memory that should be fetched
     // Then updates the program counter by one
-    int currentByte = PC++ * lastIntructionSize;
+    currentByte = PC * 2;
     
     // Determines the opcode for the current instruction to grab the right amount of bytes from memory
     int instruction = memory[currentByte] >> 4;
@@ -91,8 +91,10 @@ void fetch()
         case 11:
         case 12:
         case 13: currentInstructionSize = 4;
+            PC += 2;
             break;
         default: currentInstructionSize = 2;
+            PC++;
             break;
     }
 
@@ -102,9 +104,6 @@ void fetch()
     {
         currentInstruction[count] = memory[currentByte + count];
     }
-
-    // Updates lastIntructionSize global with the current instruction size
-    lastIntructionSize = currentInstructionSize;
 }
 
 // Read only from the array of bytes from fetch
@@ -112,7 +111,11 @@ void fetch()
 // Or fetch additional memory needed to complete
 void decode()
 {
+    // Gets whatever is after the opcode
     OP1 = currentInstruction[0] << 4 >> 4;
+
+    // Gets the second 8 bits
+    // Depending this will be the top byte
     OP2 = currentInstruction[1];
 }
 
@@ -120,6 +123,76 @@ void decode()
 // Stores the work into result
 void execute()
 {
+    switch(currentInstruction[0] >> 4) 
+    {
+        case 0: exit(0);
+            break;
+        // Add
+        case 1: 
+            Result = Registers[OP1] + Registers[OP2 >> 4];
+            break;
+        // And
+        case 2:
+            Result = Registers[OP1] && Registers[OP2 >> 4];
+            break;
+        // Divide
+        case 3:
+            Result = Registers[OP1] / Registers[OP2 >> 4];
+            break;
+        // Multiply
+        case 4:
+            Result = Registers[OP1] * Registers[OP2 >> 4];
+            break;
+        // Subtract
+        case 5:
+            Result = Registers[OP1] - Registers[OP2 >> 4];
+            break;
+        // Or
+        case 6:
+            Result = Registers[OP1] || Registers[OP2 >> 4];
+            break;
+        // Pop | Push | Return
+        case 7:
+            break;
+        // Interrupt
+        case 8:
+            break;
+        // Addimmediate
+        case 9:
+            Result = Registers[OP1] + OP2;
+            break;
+        // Branchifequal
+        case 10:
+            if (Registers[OP1] == Registers[OP2 >> 4])
+            {
+                int offset = (OP2 << 4 >> 4) + (currentInstruction[2]) + (currentInstruction[3]);
+                PC = PC + (2 * offset);
+            }
+            break;
+        // Branchifless
+        case 11:
+            if (Registers[OP1] > Registers[OP2 >> 4])
+            {
+                int offset = (OP2 << 4 >> 4) + (currentInstruction[2]) + (currentInstruction[3]);
+                PC = PC + (2 * offset);
+            }
+            break;
+        // Jump
+        case 12:
+            break;
+        // Call
+        case 13:
+            break;
+        // Load
+        case 14:
+            break;
+        // Store
+        case 15:
+            break;
+        default: perror("Opcode wasn't determined");
+            break;
+
+    }
 
 }
 
@@ -143,6 +216,9 @@ int main(int argc, char *argv[])
 
     fetch();
     testFetch();
+
+    decode();
+    testDecode();
     
     
     return 1;
@@ -177,7 +253,8 @@ void testFetch()
 
 void testDecode()
 {
-
+    printf("Testing Decode...\n\t");
+    printf("OP1: %d\n\tOP2: %d\n", OP1, OP2);
 }
 
 void testExecute()
