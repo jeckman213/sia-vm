@@ -112,7 +112,7 @@ void fetch()
 void decode()
 {
     // Gets whatever is after the opcode
-    OP1 = currentInstruction[0] << 4 >> 4;
+    OP1 = currentInstruction[0] && 0xFF;
 
     // Gets the second 8 bits
     // Depending this will be the top byte
@@ -219,6 +219,9 @@ int main(int argc, char *argv[])
 
     decode();
     testDecode();
+
+    execute();
+    printf("Result: %d", Result);
     
     
     return 1;
