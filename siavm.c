@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-
 /*
     4 Byte Instructions To Check For:
         branchifequal => opcode 10(0xA)
@@ -24,16 +22,16 @@ int instruction;
 // Register 15 stack register
 const int NUMBER_OF_REGISTERS = 16;
 const int STACK = 15;
-int Registers[16] = { 0 };
+unsigned char Registers[16] = { 0x0 };
 
 // Program counter
 int PC = 0;
 
 // Result
-int Result = 0;
+unsigned char Result = 0;
 
 // OP1 & OP2
-int OP1, OP2;
+unsigned char OP1, OP2;
 
 // Current Instruction
 // Maxium 4 bytes per instruction
@@ -70,6 +68,9 @@ void load(char* filename)
     }
 
     fclose(file);
+
+    // Sets the Stack pointer to end of memory;
+    Registers[STACK] = (unsigned char)0x400;
 }
 
 // Read instruction bytes from memory
@@ -131,6 +132,8 @@ void execute()
 
     int secondReg = OP2 >> 4;
 
+    int offset = OP2 & 0xF;
+
     switch(instruction) 
     {
         case 0: exit(0);
@@ -161,14 +164,25 @@ void execute()
             break;
         // Pop | Push | Return
         case 7:
-            switch (OP2) 
+            switch (OP2 >> 6) 
             {
+                // return
                 case 0: 
-                    
+                    PC = memory[Registers[STACK]];
+                    Registers[STACK] += 4;
                     break;
+                // push
                 case 1: 
+                    Registers[STACK] -= 4;
+                    memory[Registers[STACK]] = Registers[OP1];
                     break;
+                // pop
                 case 2:
+                    Registers[OP1] = memory[Registers[STACK]];
+                    memory[Registers[STACK]] = 0;
+                    Registers[STACK] += 4;
+                    break;
+                default: perror("Pop, Push, or Return error");
                     break;
             }
             break;
@@ -188,7 +202,8 @@ void execute()
         case 10:
             if (Registers[OP1] == Registers[secondReg])
             {
-                int offset = ((OP2 && 0xFF) << 20) & (currentInstruction[2] << 16) & (currentInstruction[3]);
+                int offset = (OP2 >> 4 << 4) ^ (OP2);
+                offset = (offset << 20) | (currentInstruction[2] << 16) | (currentInstruction[3]);
                 PC += (2 * offset);
             }
             break;
@@ -197,11 +212,8 @@ void execute()
             if (Registers[OP1] < Registers[secondReg])
             {
                 int offset = (OP2 >> 4 << 4) ^ (OP2);
-                offset = (offset << 20) & (currentInstruction[2] << 16) & (currentInstruction[3]);
-                printf("offset; %d\n", offset);
+                offset = (offset << 20) | (currentInstruction[2] << 16) | (currentInstruction[3]);
                 PC += (2 * offset);
-                printf("PC: %d", PC);
-                exit(0);
             }
             break;
         // Jump
@@ -212,13 +224,16 @@ void execute()
         // Call
         case 13:
             Result = (((OP1 << 28) & (OP2 << 24) & (currentInstruction[2] << 16) & currentInstruction[3]) * 2) + PC;
-            Registers[STACK] = PC;
+            Registers[STACK] -= 4;
+            memory[Registers[STACK]] = PC;
             break;
         // Load
         case 14:
+            Registers[OP1] = memory[Registers[secondReg] + offset]; 
             break;
         // Store
         case 15:
+            memory[Registers[secondReg] + offset] = Registers[OP1];
             break;
         default: perror("Opcode wasn't determined");
             break;
@@ -245,11 +260,6 @@ void store()
             Registers[resultRegister] = Result;
             PC += 2;
             break;
-        case 7:
-            break;
-        case 8:
-            END_OF_PROGRAM = 1;
-            break;
         case 9:
             Registers[OP1] += Result;
             PC += 2;
@@ -269,25 +279,16 @@ int main(int argc, char *argv[])
     else
         load(argv[1]);
 
-    int count = 0;
-    
-
-    while (count != 3) 
+    while (1) 
     {
         fetch();
 
         decode();
 
         execute();
-        printf("Result: %d\n", Result);
 
         store();
-        printf("R%d: %d\n", OP1, Registers[OP1]);
-
-        count++;
     }
-
-    printf("END PC: %d", PC);
     
     return 1;
 }
